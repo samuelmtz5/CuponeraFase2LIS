@@ -1,0 +1,120 @@
+-- Crear la base de datos
+CREATE DATABASE IF NOT EXISTS cuponera_db;
+USE cuponera_db;
+
+-- 1. Tabla de empresas ofertantes
+CREATE TABLE empresas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    nit VARCHAR(20) NOT NULL UNIQUE,
+    direccion TEXT NOT NULL,
+    telefono VARCHAR(15) NOT NULL,
+    correo VARCHAR(100) NOT NULL,
+    usuario VARCHAR(50) NOT NULL UNIQUE,
+    contrasena VARCHAR(255) NOT NULL,
+    estado ENUM('pendiente', 'aprobada', 'rechazada') DEFAULT 'pendiente',
+    porcentaje_comision DECIMAL(5,2) DEFAULT NULL
+);
+
+-- 2. Tabla de usuarios (clientes)
+CREATE TABLE usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario VARCHAR(50) NOT NULL UNIQUE,
+    correo VARCHAR(100) NOT NULL UNIQUE,
+    contrasena VARCHAR(255) NOT NULL,
+    nombre_completo VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL,
+    dui VARCHAR(10) NOT NULL UNIQUE,
+    fecha_nacimiento DATE NOT NULL,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Tabla de ofertas (cupones)
+CREATE TABLE ofertas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_empresa INT NOT NULL,
+    titulo VARCHAR(100) NOT NULL,
+    precio_regular DECIMAL(10,2) NOT NULL,
+    precio_oferta DECIMAL(10,2) NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    fecha_limite_canje DATE NOT NULL,
+    cantidad INT DEFAULT NULL, -- NULL = ilimitado
+    descripcion TEXT NOT NULL,
+    estado ENUM('disponible', 'no disponible') DEFAULT 'disponible',
+    FOREIGN KEY (id_empresa) REFERENCES empresas(id) ON DELETE CASCADE
+);
+
+-- 4. Tabla de compras
+CREATE TABLE compras (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    id_oferta INT NOT NULL,
+    fecha_compra TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    codigo_cupon VARCHAR(30) NOT NULL UNIQUE,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_oferta) REFERENCES ofertas(id) ON DELETE CASCADE
+);
+
+-- 5. Tabla de tarjetas (para simulación de compra)
+CREATE TABLE tarjetas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    numero_tarjeta VARCHAR(16) NOT NULL,
+    fecha_vencimiento DATE NOT NULL,
+    cvv VARCHAR(4) NOT NULL,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+-- 6. Tabla de facturas (una por cada compra)
+CREATE TABLE facturas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_compra INT NOT NULL,
+    fecha_emision TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    monto DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (id_compra) REFERENCES compras(id) ON DELETE CASCADE
+);
+
+-- 7. Tabla de administradores
+CREATE TABLE administradores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario VARCHAR(50) NOT NULL UNIQUE,
+    contrasena VARCHAR(255) NOT NULL
+);
+
+-- 8. Vistas para reportes
+
+-- Total de cupones vendidos por empresa
+CREATE VIEW reporte_cupones_vendidos AS
+SELECT e.id AS id_empresa, e.nombre AS empresa, COUNT(c.id) AS cupones_vendidos
+FROM empresas e
+LEFT JOIN ofertas o ON o.id_empresa = e.id
+LEFT JOIN compras c ON c.id_oferta = o.id
+GROUP BY e.id;
+
+-- Total de ganancias obtenidas por la plataforma
+CREATE VIEW reporte_ganancias_por_empresa AS
+SELECT 
+    e.id AS id_empresa,
+    e.nombre AS empresa,
+    e.porcentaje_comision,
+    SUM(o.precio_oferta * (e.porcentaje_comision / 100)) AS total_ganancias
+FROM empresas e
+JOIN ofertas o ON o.id_empresa = e.id
+JOIN compras c ON c.id_oferta = o.id
+GROUP BY e.id;
+
+-- Total de ventas por empresa (sin comisión)
+CREATE VIEW reporte_ventas_por_empresa AS
+SELECT 
+    e.id AS id_empresa,
+    e.nombre AS empresa,
+    SUM(o.precio_oferta) AS total_ventas
+FROM empresas e
+JOIN ofertas o ON o.id_empresa = e.id
+JOIN compras c ON c.id_oferta = o.id
+GROUP BY e.id;
+
+-- 9. Insertar un administrador de prueba
+INSERT INTO administradores (usuario, contrasena)
+VALUES ('admin', MD5('admin123'));
