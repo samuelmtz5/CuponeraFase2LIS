@@ -17,19 +17,23 @@ class Compra {
         $stmt = $conn->prepare("INSERT INTO compras (id_usuario, id_oferta, codigo_cupon) VALUES (?, ?, ?)");
         $stmt->bind_param("iis", $data['id_usuario'], $data['id_oferta'], $data['codigo']);
         $stmt->execute();
+        $stmt->close();
 
-        // También genera factura
-        $sqlPrecio = $conn->prepare("SELECT precio_oferta FROM ofertas WHERE id = ?");
-        $sqlPrecio->bind_param("i", $data['id_oferta']);
-        $sqlPrecio->execute();
-        $sqlPrecio->bind_result($precio);
-        $sqlPrecio->fetch();
-
-        $stmtFactura = $conn->prepare("INSERT INTO facturas (id_compra, monto) VALUES (?, ?)");
         $id_compra = $conn->insert_id;
-        $stmtFactura->bind_param("id", $id_compra, $precio);
-        $stmtFactura->execute();
+
+        $stmt2 = $conn->prepare("SELECT precio_oferta FROM ofertas WHERE id = ?");
+        $stmt2->bind_param("i", $data['id_oferta']);
+        $stmt2->execute();
+        $stmt2->bind_result($monto);
+        $stmt2->fetch();
+        $stmt2->close();
+
+        $stmt3 = $conn->prepare("INSERT INTO facturas (id_compra, monto) VALUES (?, ?)");
+        $stmt3->bind_param("id", $id_compra, $monto);
+        $stmt3->execute();
+        $stmt3->close();
     }
+
 
     public static function obtenerHistorial($usuario_id) {
         $conn = Database::connect();

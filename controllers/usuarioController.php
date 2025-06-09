@@ -63,7 +63,10 @@ class UsuarioController {
 
     public function comprarCupon() {
         session_start();
-        if (!isset($_SESSION['usuario_id'])) { die("Acceso no autorizado"); }
+        if (!isset($_SESSION['usuario_id'])) {
+            echo "<script>alert('Debe iniciar sesión para comprar.'); window.location.href = 'index.php?controller=usuario&action=login';</script>";
+            exit;
+        }
 
         require_once 'models/Compra.php';
 
@@ -71,12 +74,19 @@ class UsuarioController {
         $idOferta = $_POST['id_oferta'];
         $fechaVencimiento = $_POST['fecha_vencimiento'];
 
-        if ($fechaVencimiento <= date('Y-m-d')) {
-            die("La tarjeta está vencida.");
+        $hoy = new DateTime();
+        $vencimiento = new DateTime($fechaVencimiento);
+
+        // Validación de tarjeta vencida
+        if ($vencimiento < $hoy) {
+            echo "<script>alert('❌ La tarjeta está vencida.'); window.location.href = 'index.php?controller=usuario&action=verOfertas';</script>";
+            exit;
         }
 
+        // Validación de máximo 5 cupones
         if (Compra::cuponesPorOferta($idUsuario, $idOferta) >= 5) {
-            die("No puedes comprar más de 5 cupones de esta oferta.");
+            echo "<script>alert('⚠️ Solo puedes comprar hasta 5 cupones por oferta.'); window.location.href = 'index.php?controller=usuario&action=verOfertas';</script>";
+            exit;
         }
 
         $codigo = strtoupper(bin2hex(random_bytes(5)));
@@ -87,8 +97,10 @@ class UsuarioController {
             'codigo' => $codigo
         ]);
 
-        echo "<p>Compra exitosa. Código de cupón: <strong>$codigo</strong></p>";
+        echo "<script>alert('✅ Compra exitosa. Tu código de cupón es: $codigo'); window.location.href = 'index.php?controller=usuario&action=verOfertas';</script>";
+        exit;
     }
+
     
     public function historial() {
         session_start();

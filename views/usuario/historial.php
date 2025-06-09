@@ -29,7 +29,7 @@
                             <td><?= htmlspecialchars($compra['titulo']) ?></td>
                             <td><?= $compra['codigo_cupon'] ?></td>
                             <td><?= $compra['fecha_compra'] ?></td>
-                            <td>$<?= number_format($compra['monto'], 2) ?></td>
+                            <td>$<?= isset($compra['monto']) ? number_format((float)$compra['monto'], 2) : '0.00' ?></td>
                             <td><?= $compra['fecha_emision'] ?></td>
                         </tr>
                     <?php endforeach; ?>

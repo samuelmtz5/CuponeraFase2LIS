@@ -49,6 +49,21 @@
             No hay ofertas disponibles por el momento.
         </div>
     <?php endif; ?>
+    <?php if (isset($_GET['error'])): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <?php if ($_GET['error'] === 'tarjeta_vencida'): ?>
+            ❌ La tarjeta está vencida. Por favor usa otra con fecha válida.
+        <?php elseif ($_GET['error'] === 'maximo_cupones'): ?>
+            ❌ No puedes comprar más de 5 cupones de esta oferta.
+        <?php endif; ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+<?php elseif (isset($_GET['success']) && $_GET['success'] == 1 && isset($_GET['codigo'])): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        ✅ ¡Compra exitosa! Tu código de cupón es: <strong><?= htmlspecialchars($_GET['codigo']) ?></strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+<?php endif; ?>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
